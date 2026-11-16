@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Клёв — прогноз рыбалки</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Клёв">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#f3f5f4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#101614" media="(prefers-color-scheme: dark)">
+<style>
+:root{
+  --bg:#f3f5f4; --card:#ffffff; --text:#17201d; --muted:#64716c; --line:#dfe5e2;
+  --accent:#0f6e63; --accent-soft:#e0f1ee;
+  --good:#1d8a4e; --ok:#b7791f; --bad:#b4443c;
+  --good-bg:#e3f4ea; --ok-bg:#fbf0d9; --bad-bg:#f8e4e2;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#101614; --card:#19211f; --text:#e8eeeb; --muted:#94a29c; --line:#2a3531;
+    --accent:#4fc3b3; --accent-soft:#17332f;
+    --good:#5fd08f; --ok:#e6b659; --bad:#ee8279;
+    --good-bg:#16301f; --ok-bg:#35290f; --bad-bg:#3a1b18;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+main{max-width:860px;margin:0 auto;padding:calc(20px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(48px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left))}
+body{-webkit-text-size-adjust:100%;overscroll-behavior-y:none}
+.chip,.btn,.results button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.stale{font-size:13px;color:var(--ok);font-weight:600;margin:0 0 6px}
+h1{font-size:26px;margin:0 0 2px}
+.sub{color:var(--muted);margin:0 0 18px;font-size:14px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:14px}
+.label{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:transparent;color:var(--text);padding:7px 14px;border-radius:999px;font:inherit;font-size:15px;cursor:pointer}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+@media (prefers-color-scheme: dark){.chip.on{color:#06201c}}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text);min-width:0}
+input.grow{flex:1 1 180px}
+button.btn{font:inherit;padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);cursor:pointer}
+.results{margin-top:8px;display:flex;flex-direction:column;gap:4px}
+.results button{text-align:left;font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text);cursor:pointer}
+.hero{background:var(--accent-soft);border-color:transparent}
+.hero h2{margin:0 0 6px;font-size:21px;line-height:1.3}
+.hero p{margin:4px 0;color:var(--text)}
+.hero .small{color:var(--muted);font-size:14px}
+.days{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.day{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.day.weekend{border-color:var(--accent)}
+.day-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px}
+.date{font-weight:600}
+.date small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.score{font-weight:700;font-size:20px;padding:4px 10px;border-radius:10px;white-space:nowrap}
+.good{color:var(--good);background:var(--good-bg)}
+.ok{color:var(--ok);background:var(--ok-bg)}
+.bad{color:var(--bad);background:var(--bad-bg)}
+.facts{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:14px;margin:0 0 8px}
+.facts dt{color:var(--muted)}
+.facts dd{margin:0;font-variant-numeric:tabular-nums}
+ul.why{margin:0;padding-left:18px;font-size:13.5px}
+ul.why li.plus{color:var(--good)}
+ul.why li.minus{color:var(--bad)}
+ul.why li span{color:var(--text)}
+.warn{font-size:13px;color:var(--bad);font-weight:600;margin-top:6px}
+svg{display:block;width:100%;height:auto}
+.note{color:var(--muted);font-size:13px;margin-top:16px}
+.err{color:var(--bad)}
+</style>
+</head>
+<body>
+<main>
+  <h1>Клёв</h1>
+  <p class="sub">Когда ехать на рыбалку: давление, ветер, температура и оценка по видам рыбы</p>
+
+  <div class="panel">
+    <div class="label">Водоём</div>
+    <div class="chips" id="places"></div>
+    <div class="row">
+      <input class="grow" id="q" placeholder="Найти другое место (город, посёлок)">
+      <button class="btn" id="find">Найти</button>
+    </div>
+    <div class="results" id="results"></div>
+  </div>
+
+  <div class="panel">
+    <div class="label">Рыба</div>
+    <div class="chips" id="fish"></div>
+    <div class="row" style="align-items:center">
+      <label for="water" style="font-size:14px;color:var(--muted)">Температура воды сегодня, если знаете:</label>
+      <input id="water" type="number" step="0.5" style="width:90px" placeholder="°C">
+    </div>
+  </div>
+
+  <div class="panel hero" id="hero">Загружаю прогноз…</div>
+
+  <div class="panel">
+    <div class="label">Давление, мм рт. ст. (на уровне водоёма)</div>
+    <div id="chart"></div>
+  </div>
+
+  <div class="days" id="days"></div>
+
+  <p class="note">
+    Оценка — это эвристика по рыбацким правилам: стабильное давление, умеренный ветер, подходящая для вида температура воды,
+    южный и западный ветер лучше северного и восточного. Температура воды оценивается по средней температуре воздуха за последние 10 дней,
+    поэтому лучше ввести свою, если знаете. Прогноз дальше 5–7 дней неточный. Данные: Open-Meteo.
+  </p>
+</main>
+
+<script>
+const PLACES_DEFAULT = [
+  {name:'Капшагай', lat:43.83, lon:77.20},
+  {name:'Или (Баканас)', lat:44.81, lon:76.27},
+  {name:'Балхаш', lat:46.84, lon:74.98},
+];
+// t: [нет клёва ниже, оптимум от, оптимум до, нет клёва выше] — температура воды, °C
+// wind: [идеал от, идеал до, предел] — м/с
+const FISH = {
+  sudak:  {name:'Судак',  t:[3,10,20,26],  wind:[1,6,10], predator:true},
+  sazan:  {name:'Сазан',  t:[9,18,26,30],  wind:[0,4,8]},
+  vobla:  {name:'Вобла',  t:[4,8,18,24],   wind:[0,4,8]},
+  lesh:   {name:'Лещ',    t:[5,12,22,27],  wind:[0,5,9]},
+  zherekh:{name:'Жерех',  t:[7,14,24,28],  wind:[1,6,10], predator:true},
+};
+const DOW = ['вс','пн','вт','ср','чт','пт','сб'];
+const DOW_FULL = ['воскресенье','понедельник','вторник','среду','четверг','пятницу','субботу'];
+const MON = ['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
+const DIRS = ['С','СВ','В','ЮВ','Ю','ЮЗ','З','СЗ'];
+
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+let customPlaces = store.get('klev.places', []);
+let place = store.get('klev.place', PLACES_DEFAULT[0]);
+let fishKey = store.get('klev.fish', 'sudak');
+if(!FISH[fishKey]) fishKey = 'sudak';
+let data = null;
+
+const $ = id => document.getElementById(id);
+const clamp = (x,a,b) => Math.max(a, Math.min(b, x));
+const mean = a => a.reduce((s,x)=>s+x,0)/a.length;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function trap(x,[a,b,c,d]){ if(x<=a||x>=d) return 0; if(x<b) return (x-a)/(b-a); if(x<=c) return 1; return (d-x)/(d-c); }
+const dirName = deg => DIRS[Math.round(deg/45)%8];
+
+function renderPlaces(){
+  const all = [...PLACES_DEFAULT, ...customPlaces];
+  $('places').innerHTML = all.map((p,i)=>
+    `<button class="chip ${p.lat===place.lat&&p.lon===place.lon?'on':''}" data-i="${i}">${esc(p.name)}</button>`).join('');
+  $('places').querySelectorAll('button').forEach(b => b.onclick = () => {
+    place = all[+b.dataset.i]; store.set('klev.place', place); renderPlaces(); load();
+  });
+}
+function renderFish(){
+  $('fish').innerHTML = Object.entries(FISH).map(([k,f]) =>
+    `<button class="chip ${k===fishKey?'on':''}" data-k="${k}">${f.name}</button>`).join('');
+  $('fish').querySelectorAll('button').forEach(b => b.onclick = () => {
+    fishKey = b.dataset.k; store.set('klev.fish', fishKey); renderFish(); render();
+  });
+}
+
+async function search(){
+  const q = $('q').value.trim(); if(!q) return;
+  $('results').textContent = 'Ищу…';
+  try{
+    const r = await fetch('https://geocoding-api.open-meteo.com/v1/search?count=6&language=ru&name=' + encodeURIComponent(q));
+    const j = await r.json();
+    const list = j.results || [];
+    if(!list.length){ $('results').textContent = 'Ничего не найдено'; return; }
+    $('results').innerHTML = list.map((p,i)=>
+      `<button data-i="${i}">${esc(p.name)}${p.admin1?', '+esc(p.admin1):''}${p.country?', '+esc(p.country):''}</button>`).join('');
+    $('results').querySelectorAll('button').forEach(b => b.onclick = () => {
+      const p = list[+b.dataset.i];
+      place = {name:p.name, lat:+p.latitude.toFixed(3), lon:+p.longitude.toFixed(3)};
+      if(![...PLACES_DEFAULT,...customPlaces].some(x=>x.lat===place.lat&&x.lon===place.lon)){
+        customPlaces.push(place); customPlaces = customPlaces.slice(-5); store.set('klev.places', customPlaces);
+      }
+      store.set('klev.place', place);
+      $('results').innerHTML = ''; $('q').value = '';
+      renderPlaces(); load();
+    });
+  }catch(e){ $('results').innerHTML = '<span class="err">Поиск не удался</span>'; }
+}
+
+async function load(){
+  $('hero').textContent = 'Загружаю прогноз…';
+  $('days').innerHTML = ''; $('chart').innerHTML = '';
+  const url = 'https://api.open-meteo.com/v1/forecast?latitude='+place.lat+'&longitude='+place.lon+
+    '&hourly=temperature_2m,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation'+
+    '&past_days=10&forecast_days=10&timezone=auto&wind_speed_unit=ms';
+  const key = 'klev.cache.' + place.lat + ',' + place.lon;
+  staleNote = '';
+  try{
+    const r = await fetch(url);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const j = await r.json();
+    store.set(key, {at:Date.now(), j});
+    data = build(j);
+    render();
+  }catch(e){
+    // Нет связи: показываем последний сохранённый прогноз для этого места
+    const c = store.get(key, null);
+    data = c ? build(c.j) : null;
+    if(data && data.days.length){
+      const t = new Date(c.at);
+      staleNote = `Нет связи — прогноз от ${t.getDate()} ${MON[t.getMonth()]}, ${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
+      render();
+    }else{
+      data = null;
+      $('hero').innerHTML = '<span class="err">Не удалось загрузить прогноз, сохранённого для этого места тоже нет. Проверьте интернет.</span>';
+    }
+  }
+}
+let staleNote = '';
+document.addEventListener('visibilitychange', () => { if(!document.hidden) load(); });
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+
+function build(j){
+  const h = j.hourly, byDate = {};
+  h.time.forEach((t,i) => { (byDate[t.slice(0,10)] ||= []).push(i); });
+  const days = [];
+  for(const [date, idx] of Object.entries(byDate)){
+    if(idx.length < 24) continue;
+    const dayIdx = idx.filter(i => { const hr = +h.time[i].slice(11,13); return hr>=6 && hr<=20; });
+    const p = idx.map(i => h.surface_pressure[i]*0.750062);
+    const t = idx.map(i => h.temperature_2m[i]);
+    let sx=0, sy=0;
+    dayIdx.forEach(i => { const a = h.wind_direction_10m[i]*Math.PI/180; sx+=Math.sin(a); sy+=Math.cos(a); });
+    days.push({
+      date, idx,
+      pMean:mean(p), pMin:Math.min(...p), pMax:Math.max(...p),
+      tMean:mean(t), tMin:Math.min(...t), tMax:Math.max(...t),
+      wind:mean(dayIdx.map(i=>h.wind_speed_10m[i])),
+      gust:Math.max(...dayIdx.map(i=>h.wind_gusts_10m[i])),
+      dir:(Math.atan2(sx,sy)*180/Math.PI+360)%360,
+      rain:idx.reduce((s,i)=>s+(h.precipitation[i]||0),0),
+    });
+  }
+  days.forEach((d,i) => {
+    const prev = days.slice(Math.max(0,i-9), i+1);
+    d.water = Math.max(1, mean(prev.map(x=>x.tMean)));
+    d.d24 = i ? d.pMean - days[i-1].pMean : 0;
+    const w = days.slice(Math.max(0,i-2), i+1);
+    d.range72 = Math.max(...w.map(x=>x.pMax)) - Math.min(...w.map(x=>x.pMin));
+    d.tDrop = i ? d.tMean - days[i-1].tMean : 0;
+  });
+  const today = new Date(Date.now() + j.utc_offset_seconds*1000).toISOString().slice(0,10);
+  const start = Math.max(0, days.findIndex(d => d.date >= today));
+  return {hourly:h, days:days.slice(start)};
+}
+
+function rate(f, d, waterShift){
+  const water = Math.max(1, d.water + waterShift);
+  const plus = [], minus = [];
+  const ts = trap(water, f.t);
+  if(ts >= 0.8) plus.push(`вода около ${water.toFixed(0)}° — комфортно для вида`);
+  else if(ts >= 0.35) minus.push(`вода около ${water.toFixed(0)}° — не оптимум (лучше ${f.t[1]}–${f.t[2]}°)`);
+  else minus.push(`вода около ${water.toFixed(0)}° — ${water < f.t[1] ? 'слишком холодно' : 'слишком тепло'}, рыба пассивна`);
+
+  let stab = 1 - clamp((0.6*Math.abs(d.d24) + 0.4*d.range72 - 2.5)/7, 0, 1);
+  if(f.predator && d.d24 < -0.8 && d.d24 > -4) stab = Math.min(1, stab + 0.1);
+  if(stab >= 0.75) plus.push('давление стабильное');
+  else if(stab >= 0.4) minus.push(`давление ${d.d24<0?'падает':'растёт'} (${d.d24>0?'+':''}${d.d24.toFixed(1)} мм за сутки)`);
+  else minus.push(`давление скачет (размах ${d.range72.toFixed(0)} мм за 3 дня)`);
+
+  const [lo,hi,max] = f.wind;
+  let ws = d.wind < lo ? 0.7 : d.wind <= hi ? 1 : clamp(1-(d.wind-hi)/(max-hi), 0, 1);
+  if(d.gust > 14) ws *= 0.6;
+  if(ws >= 0.9) plus.push(`ветер ${d.wind.toFixed(0)} м/с — в самый раз`);
+  else if(d.wind < lo) minus.push('штиль — хищник менее активен');
+  else if(ws < 0.6) minus.push(`ветер сильный, ${d.wind.toFixed(0)} м/с`);
+
+  const ds = 0.5 + 0.5*Math.cos((d.dir-225)*Math.PI/180);
+  if(d.wind >= 1.5){
+    if(ds >= 0.75) plus.push(`ветер ${dirName(d.dir)} — по примете хороший`);
+    else if(ds <= 0.25) minus.push(`ветер ${dirName(d.dir)} — по примете плохой`);
+  }
+  const ps = d.rain<1 ? 1 : d.rain<5 ? 0.8 : d.rain<15 ? 0.5 : 0.2;
+  if(d.rain >= 5) minus.push(`осадки ${d.rain.toFixed(0)} мм`);
+  const cs = d.tDrop < -5 ? 0.3 : d.tDrop < -3 ? 0.7 : 1;
+  if(d.tDrop < -3) minus.push(`резкое похолодание (${d.tDrop.toFixed(0)}° за сутки)`);
+
+  const base = 0.45*stab + 0.30*ws + 0.10*ds + 0.08*ps + 0.07*cs;
+  const score = Math.round(100 * base * (0.25 + 0.75*ts));
+  return {score, plus, minus, water, danger: d.wind >= 8 || d.gust >= 13};
+}
+const cls = s => s >= 65 ? 'good' : s >= 45 ? 'ok' : 'bad';
+const verdict = s => s >= 65 ? 'стоит ехать' : s >= 45 ? 'можно попробовать' : 'лучше не ехать';
+function fmtDate(iso){ const d = new Date(iso+'T12:00:00'); return {dow:d.getDay(), text:`${d.getDate()} ${MON[d.getMonth()]}`}; }
+
+function render(){
+  if(!data) return;
+  const f = FISH[fishKey];
+  const wIn = parseFloat($('water').value);
+  const shift = isFinite(wIn) ? wIn - data.days[0].water : 0;
+  const rated = data.days.map((d,i) => ({d, i, r:rate(f, d, shift), ...fmtDate(d.date)}));
+
+  // Герой: лучший день ближайших выходных и лучший день недели
+  const week = rated.slice(0,7);
+  const best = week.reduce((a,b) => b.r.score > a.r.score ? b : a);
+  const wk = week.filter(x => x.dow===6 || x.dow===0);
+  const bestWk = wk.length ? wk.reduce((a,b) => b.r.score > a.r.score ? b : a) : null;
+  const when = x => x.i===0 ? 'сегодня' : x.i===1 ? 'завтра' : `в ${DOW_FULL[x.dow]}, ${x.text}`;
+  const line = x => `давление ${x.d.pMean.toFixed(0)} мм (${x.d.d24>0?'+':''}${x.d.d24.toFixed(1)} за сутки), ветер ${dirName(x.d.dir)} ${x.d.wind.toFixed(0)} м/с, воздух ${x.d.tMin.toFixed(0)}…${x.d.tMax.toFixed(0)}°`;
+  let html = staleNote ? `<p class="stale">${esc(staleNote)}</p>` : '';
+  if(best.r.score >= 45){
+    html += `<h2>${f.name}, ${esc(place.name)}: лучше всего ${when(best)} — ${best.r.score}/100, ${verdict(best.r.score)}</h2><p>${line(best)}</p>`;
+  }else{
+    html += `<h2>${f.name}, ${esc(place.name)}: в ближайшую неделю хороших дней нет</h2><p>Лучший из слабых — ${when(best)}, ${best.r.score}/100. ${esc(best.r.minus[0]||'')}</p>`;
+  }
+  if(bestWk && bestWk !== best){
+    html += `<p class="small">Выходные: ${when(bestWk)} — ${bestWk.r.score}/100, ${verdict(bestWk.r.score)}. ${line(bestWk)}</p>`;
+  }else if(bestWk){
+    html += `<p class="small">Это как раз выходной.</p>`;
+  }
+  // Какая рыба лучше всего в лучший день
+  const alt = Object.entries(FISH).map(([k,ff]) => ({k, name:ff.name, s:Math.max(...data.days.slice(0,7).map(d=>rate(ff,d,shift).score))}))
+    .sort((a,b)=>b.s-a.s)[0];
+  if(alt.k !== fishKey && alt.s >= best.r.score + 8) html += `<p class="small">На этой неделе перспективнее ${alt.name.toLowerCase()} — до ${alt.s}/100.</p>`;
+  $('hero').innerHTML = html;
+
+  $('days').innerHTML = rated.map(x => {
+    const {d, r} = x, wkd = x.dow===6 || x.dow===0;
+    return `<div class="day ${wkd?'weekend':''}">
+      <div class="day-head">
+        <div class="date">${DOW[x.dow]}, ${x.text}<small>${x.i===0?'сегодня':x.i===1?'завтра':wkd?'выходной':''}${x.i>6?' · прогноз неточный':''}</small></div>
+        <div class="score ${cls(r.score)}" title="${verdict(r.score)}">${r.score}</div>
+      </div>
+      <dl class="facts">
+        <dt>Давление</dt><dd>${d.pMean.toFixed(0)} мм (${d.d24>0?'+':''}${d.d24.toFixed(1)})</dd>
+        <dt>Ветер</dt><dd>${dirName(d.dir)} ${d.wind.toFixed(0)} м/с, порывы ${d.gust.toFixed(0)}</dd>
+        <dt>Воздух</dt><dd>${d.tMin.toFixed(0)}…${d.tMax.toFixed(0)}°</dd>
+        <dt>Вода</dt><dd>≈ ${r.water.toFixed(0)}°</dd>
+        <dt>Осадки</dt><dd>${d.rain < 0.1 ? 'нет' : d.rain.toFixed(1)+' мм'}</dd>
+      </dl>
+      <ul class="why">
+        ${r.plus.map(t=>`<li class="plus"><span>${esc(t)}</span></li>`).join('')}
+        ${r.minus.map(t=>`<li class="minus"><span>${esc(t)}</span></li>`).join('')}
+      </ul>
+      ${r.danger ? '<div class="warn">Сильный ветер — на лодке опасно</div>' : ''}
+    </div>`;
+  }).join('');
+
+  drawChart();
+}
+
+function drawChart(){
+  const h = data.hourly, pts = [];
+  data.days.forEach(d => d.idx.forEach(i => pts.push({t:h.time[i], p:h.surface_pressure[i]*0.750062})));
+  const W=700, H=150, L=38, R=8, T=10, B=24;
+  const lo = Math.floor(Math.min(...pts.map(x=>x.p))-1), hi = Math.ceil(Math.max(...pts.map(x=>x.p))+1);
+  const X = i => L + i*(W-L-R)/(pts.length-1), Y = p => T + (hi-p)*(H-T-B)/(hi-lo);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="График давления">`;
+  for(let k=0;k<=2;k++){ const p = lo + k*(hi-lo)/2;
+    s += `<line x1="${L}" x2="${W-R}" y1="${Y(p)}" y2="${Y(p)}" stroke="var(--line)"/><text x="${L-6}" y="${Y(p)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${p.toFixed(0)}</text>`; }
+  pts.forEach((x,i) => { if(x.t.slice(11,13)==='00'){
+    const d = fmtDate(x.t.slice(0,10));
+    s += `<line x1="${X(i)}" x2="${X(i)}" y1="${T}" y2="${H-B}" stroke="var(--line)"/><text x="${X(i)+3}" y="${H-8}" font-size="11" fill="var(--muted)">${DOW[d.dow]} ${d.text.split(' ')[0]}</text>`; }});
+  s += `<polyline fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" points="${pts.map((x,i)=>X(i).toFixed(1)+','+Y(x.p).toFixed(1)).join(' ')}"/></svg>`;
+  $('chart').innerHTML = s;
+}
+
+$('find').onclick = search;
+$('q').addEventListener('keydown', e => { if(e.key==='Enter') search(); });
+$('water').addEventListener('input', render);
+renderPlaces(); renderFish(); load();
+</script>
+</body>
+</html>
